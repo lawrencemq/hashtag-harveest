@@ -18,7 +18,7 @@ var blockedTags  = map[string]bool{
 	"#like": true,
 }
 
-func getTagsAtUrl(url string) []string {
+func getTagsAtUrl(url string, tagChannel chan []string) {
 	
 	fmt.Printf("Getting %s...\n", url)
 	resp, err := http.Get(url)
@@ -34,8 +34,7 @@ func getTagsAtUrl(url string) []string {
 
 	found := document.Find(".tag-box")
 
-	return strings.Fields(found.Text())
-
+	tagChannel <- strings.Fields(found.Text())
 }
 
 func createUrlForHashtag(tag string) string {
@@ -54,15 +53,20 @@ func createUrlForHashtag(tag string) string {
 
 func getDataForHashtags(tags []string) []string {
 
+	dataChannel := make(chan []string)
+
 	foundTags := make(map[string]bool)
 
 	// Gathering all tags from HTMLs
 	for _, tag := range tags {
-		tagList := getTagsAtUrl(createUrlForHashtag(tag))
+		go getTagsAtUrl(createUrlForHashtag(tag), dataChannel)
+	}
+
+	for  i := 1; i < len(tags); i++{
+		tagList :=  <- dataChannel
 		for _, t := range tagList{
 			foundTags[t] = true
 		}
-		
 	}
 
 	// Removing banned tags
