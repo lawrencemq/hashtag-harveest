@@ -7,16 +7,29 @@ import (
 	"strings"
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/PuerkitoBio/goquery"
+	mapset "github.com/deckarep/golang-set"
 )
 
-var blockedTags  = map[string]bool{
-	"#bhfyp": true,
-	"#ol": true,
-	"#follow": true,
-	"#me": true,
-	"#love": true,
-	"#like": true,
+var blockedTags = []interface{}{
+	"#bhfyp",
+	"#ol",
+	"#follow",
+	"#me",
+	"#love",
+	"#like",
 }
+var blockedTagsSet = mapset.NewSetFromSlice(blockedTags)
+
+var requiredTags = []interface{} {
+	"#tiktok",
+	"#9gag",
+	"#meme",
+	"#memes",
+	"#dailymemes",
+	"#memesdaily",
+	"#memepage",
+}
+var requiredTagsSet = mapset.NewSetFromSlice(requiredTags)
 
 func getTagsAtUrl(url string, tagChannel chan []string) {
 	
@@ -55,33 +68,39 @@ func getDataForHashtags(tags []string) []string {
 
 	dataChannel := make(chan []string)
 
-	foundTags := make(map[string]bool)
+	foundTags := mapset.NewSet()
 
 	// Gathering all tags from HTMLs
 	for _, tag := range tags {
 		go getTagsAtUrl(createUrlForHashtag(tag), dataChannel)
 	}
 
-	for  i := 1; i < len(tags); i++{
+	for  i := 0; i < len(tags); i++{
 		tagList :=  <- dataChannel
 		for _, t := range tagList{
-			foundTags[t] = true
+			foundTags.Add(t)
 		}
 	}
 
-	// Removing banned tags
-	for t := range blockedTags{
-		if _, ok := foundTags[t]; ok {
-			delete(foundTags, t)
-		}
+	// Removing banned tags and constant tags
+	foundTags = foundTags.Difference(blockedTagsSet)
+	foundTags = foundTags.Difference(requiredTagsSet)
+	
+	tagsToReturn := make([]string, foundTags.Cardinality())
+	for i, v := range foundTags.ToSlice() {
+		tagsToReturn[i] = v.(string)
 	}
 
-	finalTags := make([]string, 0, len(foundTags))
-    for k := range foundTags {
-        finalTags = append(finalTags, k)
-    }
+	return tagsToReturn
+}
 
-	return finalTags
+func setToStrings(set mapset.Set) []string {
+	tagsToReturn := make([]string, set.Cardinality())
+	for i, v := range set.ToSlice() {
+		tagsToReturn[i] = v.(string)
+	}
+	return tagsToReturn
+
 }
 
 func main() {
@@ -108,5 +127,8 @@ func main() {
 		Options: hashtagList,
 	}
 	survey.AskOne(prompt, &hashtagsToKeep)
+
+
+	fmt.Printf("Hashtags: %s %s",  strings.Join(setToStrings(requiredTagsSet), " "), strings.Join(hashtagsToKeep, " "))
 
 }
