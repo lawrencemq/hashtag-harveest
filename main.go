@@ -90,7 +90,7 @@ func main() {
 	for true{
 		tag := ""
 		prompt := &survey.Input{
-			Message: "ping",
+			Message: "Enter new hashtag to search (enter none to stop)",
 		}
 		survey.AskOne(prompt, &tag)
 		if len(tag) == 0 {
