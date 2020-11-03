@@ -129,6 +129,6 @@ func main() {
 	survey.AskOne(prompt, &hashtagsToKeep)
 
 
-	fmt.Printf("Hashtags: %s %s",  strings.Join(setToStrings(requiredTagsSet), " "), strings.Join(hashtagsToKeep, " "))
+	fmt.Printf("Hashtags: %s %s %s", strings.Join(hashtagsToSearch, " "), strings.Join(setToStrings(requiredTagsSet), " "), strings.Join(hashtagsToKeep, " "))
 
 }
